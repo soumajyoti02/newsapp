@@ -73,7 +73,6 @@ export class News extends Component {
     }
 
     render() {
-        let { pageSize } = this.props;
         return (
             <div className="container my-5">
                 <h1 className='text-center'>NewsMonkey - Top Headings</h1>
@@ -88,7 +87,7 @@ export class News extends Component {
                 <div className="container d-flex justify-content-between">
                     <button disabled={this.state.page <= 1} type="button" className="btn btn-dark" onClick={this.handlePreviousClick}>&larr; Previous</button>
                     <button disabled={this.state.page + 1 > Math.ceil(this.state.totalResults / 5)} type="button" className="btn btn-dark" onClick={this.handleNextClick}>Next &rarr;</button>
-                    {console.log(Math.ceil(this.state.totalResults / pageSize))}
+                    {console.log(Math.ceil(this.state.totalResults / this.props.pageSize))}
                 </div>
             </div>
         )
