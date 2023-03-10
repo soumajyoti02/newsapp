@@ -1,63 +1,90 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import NewsItem from './NewsItem'
+import Spinner from './Spinner';
 
 export class News extends Component {
-    articles = [
-        {
-            "source": {
-                "id": null,
-                "name": "CBS Sports"
-            },
-            "author": "",
-            "title": "2023 NFL Mock Draft: Anthony Richardson continues move up board, other combine standouts catapult into Round 1 - CBS Sports",
-            "description": "There are some new names in the first round",
-            "url": "https://www.cbssports.com/nfl/draft/news/2023-nfl-mock-draft-anthony-richardson-continues-move-up-board-other-combine-standouts-catapult-into-round-1/",
-            "urlToImage": "https://sportshub.cbsistatic.com/i/r/2023/03/05/30efc159-5ad4-4922-9ee4-7db9288292d1/thumbnail/1200x675/1b398314aab0d97e179213ae36407a29/anthony-richardson.jpg",
-            "publishedAt": "2023-03-07T14:49:00Z",
-            "content": "The 2023 NFL Combine is all but over, and it was a great week for a lot of players. If you need a quick refresher, we fired up the ol' \"With the First Pick\" podcast machine every day to recap the act… [+1015 chars]"
-        },
-        {
-            "source": {
-                "id": null,
-                "name": "NBCSports.com"
-            },
-            "author": "Mike Florio",
-            "title": "Report: Aaron Rodgers spoke to Jets on Monday - ProFootballTalk - NBC Sports",
-            "description": "As potential Jets quarterback Derek Carr was signing instead with the Saints on Monday, current Packers quarterback Aaron Rodgers reportedly was talking with the Jets.Just after midnight, former ESPN host Trey Wingo dropped this nugget on Twitter: “Per source…",
-            "url": "https://profootballtalk.nbcsports.com/2023/03/07/report-aaron-rodgers-spoke-to-jets-on-monday/",
-            "urlToImage": "https://profootballtalk.nbcsports.com/wp-content/uploads/sites/25/2023/03/GettyImages-1244067485-e1678198654357.jpg",
-            "publishedAt": "2023-03-07T14:18:00Z",
-            "content": "As potential Jets quarterback Derek Carr was signing instead with the Saints on Monday, current Packers quarterback Aaron Rodgers reportedly was talking with the Jets.\r\nJust after midnight, former ES… [+1032 chars]"
-        }
-    ]
+    static defaultProps = {
+        name: 'in',
+        pageSize: 8
+    }
+
+    static propTypes = {
+        country: PropTypes.string,
+        pageSize: PropTypes.number,
+        category: PropTypes.string,
+    }
 
     constructor() {
         super();
         this.state = {
-            articles: this.articles,
+            page: 1,
+            articles: [],
             loading: false
         }
     }
 
     async componentDidMount() {
-        let url = "https://newsapi.org/v2/top-headlines?sources=techcrunch&apiKey=7531fcc04fc2428e92725eac12bae5f7";
+        let url = `https://newsapi.org/v2/top-headlines?country=us&category=${this.props.category}&apiKey=7531fcc04fc2428e92725eac12bae5f7&page=1&pageSize=${this.props.pageSize}`;
+
+        this.setState({ loading: true })
+
         let data = await fetch(url);
         let parsedData = await data.json();
-        this.setState({ articles: parsedData.articles })
+        this.setState({
+            loading: false,
+            articles: parsedData.articles,
+            totalResults: parsedData.totalResults
+        })
+    }
+
+    handlePreviousClick = async () => {
+        let url = `https://newsapi.org/v2/top-headlines?country=us&category=${this.props.category}&apiKey=7531fcc04fc2428e92725eac12bae5f7&page=${this.state.page - 1}&pageSize=${this.props.pageSize}`;
+
+        this.setState({ loading: true })
+
+        let data = await fetch(url);
+        let parsedData = await data.json();
+
+        this.setState({
+            loading: false,
+            page: this.state.page - 1,
+            articles: parsedData.articles
+        })
+    }
+
+    handleNextClick = async () => {
+        if (!(this.state.page + 1 > Math.ceil(this.state.totalResults / this.props.pageSize))) {
+            let url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}& category=${this.props.category}apiKey=7531fcc04fc2428e92725eac12bae5f7&page=${this.state.page + 1}&pageSize=${this.props.pageSize}`;
+
+            this.setState({ loading: true })
+
+            let data = await fetch(url)
+            let parsedData = await data.json();
+
+            this.setState({
+                loading: false,
+                page: this.state.page + 1,
+                articles: parsedData.articles
+            })
+        }
     }
 
     render() {
         return (
             <div className="container my-5">
-                <h1>NewsMonkey - Top Headings</h1>
-
+                <h1 className='text-center'>NewsMonkey - Top Headings</h1>
+                {this.state.loading && <Spinner />}
                 <div className="row my-3" >
-                    {this.state.articles.map((element) => {
+                    {!this.state.loading && this.state.articles && this.state.articles.map((element) => {
                         return <div className="col-md-4" key={element.url}>
                             <NewsItem title={element.title ? element.title.slice(0, 40) : ""} description={element.description ? element.description.slice(0, 85) : ""} imageUrl={element.urlToImage} newsUrl={element.url} />
                         </div>
                     })}
+                </div>
+                <div className="container d-flex justify-content-between">
+                    <button disabled={this.state.page <= 1} type="button" className="btn btn-dark" onClick={this.handlePreviousClick}>&larr; Previous</button>
+                    <button disabled={this.state.page + 1 > Math.ceil(this.state.totalResults / this.props.pageSize)} type="button" className="btn btn-dark" onClick={this.handleNextClick}>Next &rarr;</button>
                 </div>
             </div>
         )
